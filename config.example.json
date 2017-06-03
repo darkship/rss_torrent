@@ -1,0 +1,15 @@
+{
+  "rss": [
+    {
+      "url": "http://domain.com/rss",
+      "type": "magnet"
+    }
+  ],
+  "transmissionConfig": {
+    "host":"localhost"
+  },
+  "torrnentTitles": [
+    "title1",
+    "title2"
+  ]
+}
