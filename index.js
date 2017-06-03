@@ -1,4 +1,6 @@
-const {rss, torrnentTitles, transmissionConfig} = require('./config.json');
+require('./globals.js')
+
+const {rss, torrnentTitles, transmissionConfig} = config;
 const TorrentFeedLoader = require('./lib/torrent_feed_loader')
 const Transmission = require('transmission-client').Transmission;
 
@@ -10,14 +12,14 @@ const Client = new Transmission(transmissionConfig);
 const add= async (link, method) => {
   try {
     const addRes = await Client[method](link);
-    console.log(addRes);
+    logger.info(addRes);
     await Client.start([addRes.id])
   } catch(e){
     const msg = e.toString();
     if(msg === 'Error: duplicate torrent'){
-      console.error(msg)
+      logger.error(msg)
     } else {
-      console.error(e)
+      logger.error(e)
     }
   }
 };
@@ -30,7 +32,7 @@ const tfl = new TorrentFeedLoader({rss, lastrunFile});
 tfl.loadLastrun();
 
 tfl.on('loadLastrun', (date) => {
-  console.log('last run was', date);
+  logger.info('last run was', date);
   tfl.startFetchTorrents(date)
   tfl.setLastRun()
 });
@@ -38,7 +40,7 @@ tfl.on('loadLastrun', (date) => {
 tfl.on('torrentFeed', ({title, link}, {type}) => {
   const isWantedTorrent = rexps.find(t=> title.match(t));
   if(isWantedTorrent) {
-    console.log(title);
+    logger.info(title);
     switch (type){
       case 'magnet' :
         addMagnet(link);
@@ -50,4 +52,5 @@ tfl.on('torrentFeed', ({title, link}, {type}) => {
   }
 });
 
-tfl.on('error', error => console.error)
+tfl.on('error', error => logger.error)
+tfl.on('fetchTorrents', t => logger.info)

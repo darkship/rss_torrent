@@ -12,6 +12,7 @@
     "feedparser": "^2.2.0",
     "minimist": "^1.2.0",
     "request": "^2.81.0",
-    "transmission-client": "^0.4.4"
+    "transmission-client": "^0.4.4",
+    "winston": "^2.3.1"
   }
 }
