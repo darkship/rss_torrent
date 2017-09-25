@@ -8,7 +8,7 @@
   "transmissionConfig": {
     "host":"localhost"
   },
-  "torrnentTitles": [
+  "torrentTitles": [
     "title1",
     "title2"
   ]

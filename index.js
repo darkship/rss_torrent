@@ -1,10 +1,10 @@
 require('./globals.js')
 
-const {rss, torrnentTitles, transmissionConfig} = config;
+const {rss, torrentTitles, transmissionConfig} = config;
 const TorrentFeedLoader = require('./lib/torrent_feed_loader')
 const Transmission = require('transmission-client').Transmission;
 
-const rexps = torrnentTitles.map(t => new RegExp(t))
+const rexps = torrentTitles.map(t => new RegExp(t))
 const lastrunFile = __dirname + '/lastrun';
 
 const Client = new Transmission(transmissionConfig);
