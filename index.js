@@ -5,7 +5,7 @@ const TorrentFeedLoader = require('./lib/torrent_feed_loader')
 const Transmission = require('transmission-client').Transmission;
 
 const rexps = torrentTitles.map(t => new RegExp(t))
-const lastrunFile = __dirname + '/lastrun';
+const lastRunFile = __dirname + '/lastrun';
 
 const Client = new Transmission(transmissionConfig);
 
@@ -27,14 +27,13 @@ const addMagnet = (link)=> add(link,'addMagnet');
 const addURL = (link)=> add(link,'addURL');
 const addHash = (link)=> add(link,'addHash');
 
-const tfl = new TorrentFeedLoader({rss, lastrunFile});
+const tfl = new TorrentFeedLoader({rss, lastRunFile});
 
-tfl.loadLastrun();
+tfl.loadLastRun();
 
-tfl.on('loadLastrun', (date) => {
-  logger.info('last run was', date);
+tfl.on('loadLastRun', (date) => {
+  logger.info('last successful run was', date);
   tfl.startFetchTorrents(date)
-  tfl.setLastRun()
 });
 
 tfl.on('torrentFeed', ({title, link}, {type}) => {
@@ -52,5 +51,5 @@ tfl.on('torrentFeed', ({title, link}, {type}) => {
   }
 });
 
-tfl.on('error', error => logger.error)
-tfl.on('fetchTorrents', t => logger.info)
+tfl.on('error', error => logger.error(error.message))
+tfl.on('fetchTorrents', t => logger.info('fetchTorrents', t))

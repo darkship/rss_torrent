@@ -9,10 +9,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "feedparser": "^2.2.0",
+    "feedparser": "^2.2.9",
     "minimist": "^1.2.0",
-    "request": "^2.81.0",
+    "request": "^2.85.0",
     "transmission-client": "^0.4.4",
-    "winston": "^2.3.1"
+    "winston": "^2.4.1"
   }
 }
