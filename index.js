@@ -9,23 +9,15 @@ const lastRunFile = __dirname + '/lastrun';
 
 const Client = new Transmission(transmissionConfig);
 
-const add= async (link, method) => {
+const add = async ({title, link}, method) => {
   try {
     const addRes = await Client[method](link);
-    logger.info(addRes);
+    logger.info(`added: ${title}`);
     await Client.start([addRes.id])
-  } catch(e){
-    const msg = e.toString();
-    if(msg === 'Error: duplicate torrent'){
-      logger.error(msg)
-    } else {
-      logger.error(e)
-    }
+  } catch (e) {
+    logger.error(`${title} - ${e.message}`)
   }
 };
-const addMagnet = (link)=> add(link,'addMagnet');
-const addURL = (link)=> add(link,'addURL');
-const addHash = (link)=> add(link,'addHash');
 
 const tfl = new TorrentFeedLoader({rss, lastRunFile});
 
@@ -36,18 +28,11 @@ tfl.on('loadLastRun', (date) => {
   tfl.startFetchTorrents(date)
 });
 
-tfl.on('torrentFeed', ({title, link}, {type}) => {
-  const isWantedTorrent = rexps.find(t=> title.match(t));
-  if(isWantedTorrent) {
-    logger.info(title);
-    switch (type){
-      case 'magnet' :
-        addMagnet(link);
-        break;
-      default:
-        addURL(link);
-        break
-    }
+tfl.on('torrentFeed', ({title, link}, {method}) => {
+  const isWantedTorrent = rexps.find(t => title.match(t));
+  if (isWantedTorrent) {
+    logger.info(`found: ${title}`);
+    add({title, link}, method)
   }
 });
 

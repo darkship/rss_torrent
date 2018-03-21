@@ -2,7 +2,7 @@
   "rss": [
     {
       "url": "http://domain.com/rss",
-      "type": "magnet"
+      "method": "addMagnet"
     }
   ],
   "transmissionConfig": {
