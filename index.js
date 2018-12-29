@@ -28,7 +28,7 @@ const tfl = new TorrentFeedLoader({rss, lastRunFile});
 tfl.loadLastRun();
 
 tfl.on("loadLastRun", (date) => {
-  logger.info("last successful run was", date);
+  logger.info("last successful run was", date.toString());
   tfl.startFetchTorrents(date);
 });
 
