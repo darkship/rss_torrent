@@ -2,14 +2,14 @@
   "rss": [
     {
       "url": "http://domain.com/rss",
-      "method": "addMagnet"
+      "method": "addMagnet",
+      "torrentTitles": [
+        "title1",
+        "title2"
+      ]
     }
   ],
   "transmissionConfig": {
     "host":"localhost"
-  },
-  "torrentTitles": [
-    "title1",
-    "title2"
-  ]
+  }
 }
