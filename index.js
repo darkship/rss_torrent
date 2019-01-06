@@ -1,46 +1,54 @@
-require("./globals.js");
-
-const {rss, transmissionConfig} = config;
+const logger = require("./lib/logger.js").logger;
+const config = require("./lib/config");
 const TorrentFeedLoader = require("./lib/torrent_feed_loader");
+const LastRunHandler = require("./lib/last_run_handler");
 const Transmission = require("transmission-client").Transmission;
 
+const {rss, transmissionConfig} = config;
 const lastRunFile = __dirname + "/lastrun";
 
 const Client = new Transmission(transmissionConfig);
 
-let clientError = false;
-
-const add = async ({title, link}, method) => {
+const add = async ({title, link, method}) => {
   try {
     const addRes = await Client[method](link);
     await Client.start([addRes.id]);
+
     logger.info(`added: ${title}`);
+
   } catch (e) {
     logger.error(`${title} - ${e.message}`);
+
     if (e.message !== "duplicate torrent") {
-      clientError = true;
+      process.exit(1);
     }
   }
 };
 
-const tfl = new TorrentFeedLoader({rss, lastRunFile});
+const lastRunHandler = new LastRunHandler({lastRunFile});
+const lastRun = lastRunHandler.loadLastRunSync();
+logger.info(`Last successful run was ${lastRun}`);
 
-tfl.loadLastRun();
+const torrentFeedLoader = new TorrentFeedLoader({rss});
 
-tfl.on("loadLastRun", (date) => {
-  logger.info(`last successful run was ${date}`);
-  tfl.startFetchTorrents(date);
+torrentFeedLoader.on("fetching", (url) => logger.info(`Fetch url=${url}`));
+torrentFeedLoader.on("allFeedsFetched", () => logger.info("All feeds fetched"));
+torrentFeedLoader.on("foundMatching", ({title, link}, {method}) => {
+  logger.info(`Found: ${title}`);
+  add({title, link, method});
+});
+torrentFeedLoader.on("error", error => {
+  logger.error(error.message);
+  process.exit(1);
 });
 
-tfl.on("torrentFeed", ({title, link}, {method, torrentTitles}) => {
-  const isWantedTorrent = torrentTitles.find(t => title.match(t));
-  if (isWantedTorrent) {
-    logger.info(`found: ${title}`);
-    add({title, link}, method);
+torrentFeedLoader.startFetchTorrents(lastRun);
+
+process.on("exit", (code) => {
+  if (code === 0) {
+    lastRunHandler.setLastRunSync();
+    logger.info(`Finished`);
+    return;
   }
+  logger.info(`Finished with nodeJs error ${code}`);
 });
-
-tfl.on("done", () => !clientError && tfl.setLastRun());
-
-tfl.on("error", error => logger.error(error.message));
-tfl.on("fetchTorrents", ({url, method}) => logger.info(`fetchTorrents url=${url}, method=${method}`));
