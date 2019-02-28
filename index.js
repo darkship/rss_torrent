@@ -1,54 +1,92 @@
-const logger = require("./lib/logger.js").logger;
-const config = require("./lib/config");
-const TorrentFeedLoader = require("./lib/torrent_feed_loader");
-const LastRunHandler = require("./lib/last_run_handler");
 const Transmission = require("transmission-client").Transmission;
 
-const {rss, transmissionConfig} = config;
-const lastRunFile = __dirname + "/lastrun";
+const logger = require("./lib/logger");
+const { config, resetRun, dontStartTorrents } = require("./lib/parameters");
 
-const Client = new Transmission(transmissionConfig);
+const TorrentFeedLoader = require("./lib/torrent_feed_loader");
+const LastRunHandler = require("./lib/last_run_handler");
+const TransmissionHandler = require("./lib/transmission_handler");
+const RssTorrentHandler = require("./lib/rss_torrent_handler");
 
-const add = async ({title, link, method}) => {
-  try {
-    const addRes = await Client[method](link);
-    await Client.start([addRes.id]);
+const { rssConfigs, transmissionConfig } = config;
 
-    logger.info(`added: ${title}`);
+const transmissionClient = new Transmission(transmissionConfig);
 
-  } catch (e) {
-    logger.error(`${title} - ${e.message}`);
+const getLastRunFilePath = rssConfigId => `${__dirname}/lastrun_${rssConfigId}`;
 
-    if (e.message !== "duplicate torrent") {
-      process.exit(1);
-    }
-  }
-};
+if (resetRun) {
+  logger.info(`Last successful run is reseted`);
+}
+if (dontStartTorrents) {
+  logger.info(`Torrents won't be started`);
+}
 
-const lastRunHandler = new LastRunHandler({lastRunFile});
-const lastRun = lastRunHandler.loadLastRunSync();
-logger.info(`Last successful run was ${lastRun}`);
+logger.info(`\nStarting...`);
 
-const torrentFeedLoader = new TorrentFeedLoader({rss});
+const allRssTorrentHandlers = [];
 
-torrentFeedLoader.on("fetching", (url) => logger.info(`Fetch url=${url}`));
-torrentFeedLoader.on("allFeedsFetched", () => logger.info("All feeds fetched"));
-torrentFeedLoader.on("foundMatching", ({title, link}, {method}) => {
-  logger.info(`Found: ${title}`);
-  add({title, link, method});
+Object.keys(rssConfigs).forEach(rssConfigId => {
+  const rssConfig = rssConfigs[rssConfigId];
+  const lastRunFilePath = getLastRunFilePath(rssConfigId);
+  const onError = error => {
+    logger.error(`${rssConfigId}: ${error.toString()}`);
+
+  };
+
+  const lastRunHandler = new LastRunHandler({ lastRunFilePath });
+  const torrentFeedLoader = new TorrentFeedLoader({ url: rssConfig.url });
+  const torrentClientHandler = new TransmissionHandler(
+    transmissionClient,
+    rssConfig.method
+  );
+
+  const rssTorrentHandler = new RssTorrentHandler({
+    name: rssConfigId,
+    lastRunHandler,
+    torrentFeedLoader,
+    torrentClientHandler,
+    torrentTitles: rssConfig.torrentTitles
+  });
+  allRssTorrentHandlers.push(rssTorrentHandler);
+
+  lastRunHandler.on("error", onError).on("loaded", lastRun => {
+    logger.info(`${rssConfigId}: Last successful run was ${lastRun}`);
+  });
+
+  torrentFeedLoader.on("error", onError)
+    .on("foundMatching", ({ title }) => {
+      logger.info(`${rssConfigId}: Found: ${title}`);
+    });
+
+  torrentClientHandler
+    .on("error", onError)
+    .on("added", title => {
+      logger.info(`${rssConfigId}: added torrent: ${title}`);
+    })
+    .on("duplicate", title => {
+      logger.warn(`${rssConfigId}: duplicate torrent: ${title}`);
+    });
+
+  rssTorrentHandler.start({ resetRun, dontStartTorrents });
 });
-torrentFeedLoader.on("error", error => {
-  logger.error(error.message);
-  process.exit(1);
-});
 
-torrentFeedLoader.startFetchTorrents(lastRun);
+process.on("exit", () => {
+  allRssTorrentHandlers.forEach((rssTorrentHandler) => {
+    const {
+      torrentsFound,
+      torrentsAdded,
+      torrentsDuplicated,
+      torrentsErrors,
+      errors
+    } = rssTorrentHandler.stats();
 
-process.on("exit", (code) => {
-  if (code === 0) {
-    lastRunHandler.setLastRunSync();
-    logger.info(`Finished`);
-    return;
-  }
-  logger.info(`Finished with nodeJs error ${code}`);
+    logger.info(`${rssTorrentHandler.name}: Finished with
+    errors: ${errors},
+    torrents
+      found:${torrentsFound},
+      added: ${torrentsAdded},
+      duplicates: ${torrentsDuplicated},
+      errors: ${torrentsErrors}`);
+  });
+  logger.info("Exit");
 });

@@ -1,15 +1,23 @@
 {
-  "rss": [
-    {
+  "rssConfigs": {
+    "MyID1": {
       "url": "http://domain.com/rss",
       "method": "addMagnet",
       "torrentTitles": [
         "title1",
         "title2"
       ]
+    },
+    "MyID2": {
+      "url": "http://domain.com/rss",
+      "method": "addMagnet",
+      "torrentTitles": [
+        "title3",
+        "title4"
+      ]
     }
-  ],
+  },
   "transmissionConfig": {
-    "host":"localhost"
+    "host": "localhost"
   }
 }
