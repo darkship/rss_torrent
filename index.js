@@ -30,7 +30,6 @@ Object.keys(rssConfigs).forEach(rssConfigId => {
   const lastRunFilePath = getLastRunFilePath(rssConfigId);
   const onError = error => {
     logger.error(`${rssConfigId}: ${error.toString()}`);
-
   };
 
   const lastRunHandler = new LastRunHandler({ lastRunFilePath });
@@ -53,10 +52,9 @@ Object.keys(rssConfigs).forEach(rssConfigId => {
     logger.info(`${rssConfigId}: Last successful run was ${lastRun}`);
   });
 
-  torrentFeedLoader.on("error", onError)
-    .on("foundMatching", ({ title }) => {
-      logger.info(`${rssConfigId}: Found: ${title}`);
-    });
+  torrentFeedLoader.on("error", onError).on("foundMatching", ({ title }) => {
+    logger.info(`${rssConfigId}: Found: ${title}`);
+  });
 
   torrentClientHandler
     .on("error", onError)
@@ -71,7 +69,7 @@ Object.keys(rssConfigs).forEach(rssConfigId => {
 });
 
 process.on("exit", () => {
-  allRssTorrentHandlers.forEach((rssTorrentHandler) => {
+  allRssTorrentHandlers.forEach(rssTorrentHandler => {
     const {
       torrentsFound,
       torrentsAdded,
