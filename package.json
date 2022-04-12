@@ -14,7 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "feedparser": "^2.2.9",
-    "minimist": "^1.2.5",
+    "minimist": "^1.2.6",
     "request": "^2.88.2",
     "transmission-client": "^1.0.0",
     "winston": "^3.2.1"
